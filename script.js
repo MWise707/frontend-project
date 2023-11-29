@@ -4,8 +4,16 @@ document.addEventListener("DOMContentLoaded", function () {
   const body = $("body");
   const ctx = $("#myChart");
   const pageTitle = $(`<div></div>`);
+  // current conditions card ====================
+  const currContainer = $(`<div></div>`);
+  const currTempCard = $(`<div></div>`).addClass("today-card");
+  const currHumidCard = $(`<div></div>`).addClass("today-card");
+  const currDateCard = $(`<div></div>`).addClass("today-card");
+  const currTimeCard = $(`<div></div>`).addClass("today-card");
+  const currMessageCard = $(`<div></div>`).addClass("today-card");
+  // User Input Elements
   const inputContainer = $("<div></div>");
-  const zipInput = $("<input>").attr("id", "userZip").attr("placeholder", "Enter New ZipCode Here");
+  const zipInput = $("<input>").attr("id", "userZip").attr("placeholder", "Change ZipCode Here");
   const setLocationBtn = $("<button>💹 Get Your Forecast</button>");
   const dropBtnContainer = $("<div></div>").attr("id", "dropBtnCont");
   const dropDownContent = $("<div></div>")
@@ -47,6 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
     "America/New_York",
     "America/Sao_Paulo",
   ];
+
   // Iterate over time zones and create drop down menu
   for (let i = 0; i < timeZones.length; i++) {
     // let timeZoneAnchor = $(`<a href="#">${timeZones[i]}</a>`).addClass("dropdown-content");
@@ -55,8 +64,12 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     dropDownContent.append(timeZoneAnchor);
   }
-  console.log(dropDownContent);
-  // encodeURI
+  
+  function assignCurrConditions() {
+    currTempCard.text(`defaultData.current.temperature_2m`);
+    currHumidCard.text(`defaultData.current.temperature_2m`);
+  }
+  
 
   function getLatLong() {
     return new Promise((resolve, reject) => {
@@ -132,15 +145,23 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  getDefaultData().then((data) => {
-    defaultData = data;
-    maxDailyTemps = defaultData.daily.temperature_2m_max;
-    minDailyTemps = defaultData.daily.temperature_2m_min;
-    timeLabels = defaultData.daily.time;
-    maxProbRain = defaultData.daily.precipitation_probability_max;
-    createChart();
-    console.log(data.daily.time);
-  });
+  function fetchDataAndCreateChart () {
+    getDefaultData().then((data) => {
+      defaultData = data;
+      maxDailyTemps = defaultData.daily.temperature_2m_max;
+      minDailyTemps = defaultData.daily.temperature_2m_min;
+      timeLabels = defaultData.daily.time;
+      maxProbRain = defaultData.daily.precipitation_probability_max;
+      currDateCard.text(`Date: ${defaultData.current.time}`);
+      currTimeCard.text(`Time: ${defaultData.current.time}`);
+      currTempCard.text(`Temperature: ${defaultData.current.temperature_2m}℉`);
+      currHumidCard.text(`Humidity: ${defaultData.current.relative_humidity_2m}%`);
+      createChart();
+      console.log(data.daily.time);
+    });
+  }
+
+  fetchDataAndCreateChart();
 
   // Function to update variables base on user input
   function updateVariables() {
@@ -148,11 +169,15 @@ document.addEventListener("DOMContentLoaded", function () {
     getLatLong(); // makes AJAX call and changes LAT/LONG
   }
 
-  // Add elements to page
+  // Add elements to page =======================
   body.prepend(pageTitle);
+  currContainer.append(currDateCard);
+  currContainer.append(currTimeCard);
+  currContainer.append(currTempCard);
+  currContainer.append(currHumidCard);
+  currContainer.append(currMessageCard); 
+  body.append(currContainer);
   inputContainer.append(zipInput);
-  // inputContainer.append(latInput);
-  // inputContainer.append(longInput);
   inputContainer.append(setLocationBtn);
   dropBtnContainer.append(setTimeZoneBtn);
   dropBtnContainer.append(dropDownContent);
@@ -178,15 +203,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (e.keyCode === 13) {
       defaultZip = parseFloat(zipInput.val());
       await getLatLong(); // #1 Asyncronous
-      await getDefaultData().then((data) => {
-        defaultData = data;
-        console.log(data);
-        maxDailyTemps = defaultData.daily.temperature_2m_max;
-        minDailyTemps = defaultData.daily.temperature_2m_min;
-        timeLabels = defaultData.daily.time;
-        maxProbRain = defaultData.daily.precipitation_probability_max;
-        createChart();
-      });
+      fetchDataAndCreateChart();
     }
   });
 
@@ -205,16 +222,4 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("Time Zone Option clicked:", $(this).text());
   });
 
-  /*
-  // ChartType selection
-  chartTypes.find("a").on("click", function () {
-    const selectedType = $(this).text();
-    console.log("chartType has been selected");
-    chartTypes.toggleClass("show");
-    chartBtn.text(selectedType);
-    chartType = selectedType;
-    createChart(chartType);
-  });
-
-*/
 });
