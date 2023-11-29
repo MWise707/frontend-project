@@ -6,9 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const pageTitle = $(`<div></div>`);
   const inputContainer = $("<div></div>");
   const zipInput = $("<input>").attr("id", "userZip");
-  const latInput = $("<input>").attr("id", "userLat");
-  const longInput = $("<input>").attr("id", "userLong");
-  const setLocationBtn = $("<button>Set Location</button>");
+  const setLocationBtn = $("<button>Change Zip Code</button>");
   // Default Data for my location
   let latitude = 47.1;
   let longitude = -122.32;
@@ -20,22 +18,34 @@ document.addEventListener("DOMContentLoaded", function () {
     timeLabels,
     defaultZip,
     localDisplayName;
+    localDisplayName = "Puyallup, WA (default)";
   defaultZip = 98375;
   timeZone = "America%2FLos_Angeles";
 
   function getLatLong() {
-    $.get(`https://geocode.maps.co/search?q=${defaultZip}`, (latLong) => {
-      console.log(latLong);
-      console.log(latLong[0].display_name);
-      console.log(latLong[0].lat);
-      localDisplayName = latLong[0].display_name;
-      latitude = latLong[0].lat; // set latitude based on zip
-      longitude = latLong[0].lon; // set longitude based on zip
+    return new Promise((resolve, reject) => {
+      $.get(`https://geocode.maps.co/search?q=${defaultZip}`, (latLong) => {
+        if (latLong && latLong.length > 0) {
+          // Change variables for lat/long & display name
+          localDisplayName = latLong[0].display_name;
+          console.log(localDisplayName); 
+          latitude = latLong[0].lat; 
+          longitude = latLong[0].lon; 
+          resolve();
+        } else {
+          reject(new Error('Invalid response format from geocoding API'));
+        }
+      })
+      .fail((error) => {
+        // Reject the promise if the AJAX request fails
+        reject(new Error('Failed to retrieve geolocation data'));
+      });
     });
   }
-  getLatLong();
+  
+  // getLatLong();
 
-  // Test call for API
+  // Asynchonous Call for Weather API
   function getDefaultData() {
     return new Promise((resolve, reject) => {
       $.get(
@@ -93,32 +103,40 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log(data.daily.time);
   });
 
-  function getLocalData() {
-    $.get(
-      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=apparent_temperature_max,apparent_temperature_min&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=${timeZone}`,
-      (data) => {
-        return data;
-      }
-    );
+
+  // Function to update variables base on user input
+  function updateVariables () {
+    defaultZip = parseFloat(zipInput.val());
+    getLatLong(); // makes AJAX call and changes LAT/LONG
   }
 
-  // createChart();
-
-  // API Test --- gets 7 day forecast w/ max and min temperatures for my current area
+  // ============================ Start back here
+  // Function to update chart with new data 
+  // function updateChart(latitude, longitude, timeZone) {
+  //   $.get(
+  //     `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=apparent_temperature_max,apparent_temperature_min&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=${timeZone}`, (data) => {
+  //       // Things to update with 
+  //     }
+  // }
 
   // Add elements to page
   body.prepend(pageTitle);
   inputContainer.append(zipInput);
-  inputContainer.append(latInput);
-  inputContainer.append(longInput);
+  // inputContainer.append(latInput);
+  // inputContainer.append(longInput);
   inputContainer.append(setLocationBtn);
   body.append(inputContainer);
 
   // Event listener for setLocationBtn
-  setLocationBtn.on("click", function () {
-    latitude = parseFloat(latInput.val());
-    longitude = parseFloat(longInput.val());
-    // console.log(`Latitude = ${latitude}, longitude = ${longitude}`);
-    getLocalData();
+  setLocationBtn.on("click", async function () {
+    defaultZip = parseFloat(zipInput.val());
+    await getLatLong(); // #1 Asyncronous
+    await getDefaultData().then((data) => {
+      defaultData = data;
+      maxDailyTemps = defaultData.daily.apparent_temperature_max;
+      minDailyTemps = defaultData.daily.apparent_temperature_min;
+      timeLabels = defaultData.daily.time;
+      createChart();
+    });
   });
 });
