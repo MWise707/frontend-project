@@ -2,18 +2,29 @@ document.addEventListener("DOMContentLoaded", function () {
   "use strict";
   // Declare variable and create elements
   const body = $("body");
+  const bodyStart = $("#bodyStart");
+  const bodyMid = $("#bodyMid");
+  const bodyClose = $("#bodyClose");
   const ctx = $("#myChart");
-  const pageTitle = $(`<div></div>`);
+  const pageTitle = $(`<div></div>`).attr("id", "pageTitle");
   // current conditions card ====================
-  const currContainer = $(`<div></div>`);
+  const currContainer = $(`<div></div>`).attr("id", "today-container");
   const currTempCard = $(`<div></div>`).addClass("today-card");
   const currHumidCard = $(`<div></div>`).addClass("today-card");
-  const currDateCard = $(`<div></div>`).addClass("today-card");
+  const currTitleCard = $(`<div></div>`).addClass("today-card");
   const currTimeCard = $(`<div></div>`).addClass("today-card");
   const currMessageCard = $(`<div></div>`).addClass("today-card");
   // User Input Elements
-  const inputContainer = $("<div></div>");
-  const zipInput = $("<input>").attr("id", "userZip").attr("placeholder", "Change ZipCode Here");
+  const inputContainer = $("<div></div>").attr("id", "inputCont");
+  const inputMessage = $("<div></div>")
+    .attr("id", "inputMessage")
+    .text("Change your location with one of the options below.");
+  const zipInput = $("<input>")
+    .attr("id", "userZip")
+    .attr("placeholder", "Change ZipCode Here");
+  const latLongInput = $("<input>")
+    .attr("id", "latLongInput")
+    .attr("placeholder", "lat/long: 47.1, -122.3");
   const setLocationBtn = $("<button>💹 Get Your Forecast</button>");
   const dropBtnContainer = $("<div></div>").attr("id", "dropBtnCont");
   const dropDownContent = $("<div></div>")
@@ -33,7 +44,8 @@ document.addEventListener("DOMContentLoaded", function () {
     defaultZip,
     localDisplayName,
     latitude,
-    longitude;
+    longitude,
+    currDate;
   // Default Location Data
   latitude = 47.1;
   longitude = -122.32;
@@ -55,6 +67,7 @@ document.addEventListener("DOMContentLoaded", function () {
     "America/New_York",
     "America/Sao_Paulo",
   ];
+  currTitleCard.text(`Current Weather in ${localDisplayName}`);
 
   // Iterate over time zones and create drop down menu
   for (let i = 0; i < timeZones.length; i++) {
@@ -64,12 +77,6 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     dropDownContent.append(timeZoneAnchor);
   }
-  
-  function assignCurrConditions() {
-    currTempCard.text(`defaultData.current.temperature_2m`);
-    currHumidCard.text(`defaultData.current.temperature_2m`);
-  }
-  
 
   function getLatLong() {
     return new Promise((resolve, reject) => {
@@ -89,6 +96,16 @@ document.addEventListener("DOMContentLoaded", function () {
         reject(new Error("Failed to retrieve geolocation data"));
       });
     });
+  }
+
+  // Used to find location name with LAT/LONG
+  function getLocWithLatLong() {
+    $.get(
+      `https://geocode.maps.co/reverse?lat=${latitude}&lon=${longitude}`,
+      (locData) => {
+        localDisplayName = locData.display_name;
+      }
+    );
   }
 
   // Asynchonous Call for Weather API
@@ -145,65 +162,75 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  function fetchDataAndCreateChart () {
+  function fetchDataAndCreateChart() {
     getDefaultData().then((data) => {
       defaultData = data;
       maxDailyTemps = defaultData.daily.temperature_2m_max;
       minDailyTemps = defaultData.daily.temperature_2m_min;
       timeLabels = defaultData.daily.time;
       maxProbRain = defaultData.daily.precipitation_probability_max;
-      currDateCard.text(`Date: ${defaultData.current.time}`);
-      currTimeCard.text(`Time: ${defaultData.current.time}`);
-      currTempCard.text(`Temperature: ${defaultData.current.temperature_2m}℉`);
-      currHumidCard.text(`Humidity: ${defaultData.current.relative_humidity_2m}%`);
+      currTimeCard.text(`Last Updated: ${defaultData.current.time}`);
+      currTempCard.text(`${defaultData.current.temperature_2m}℉`);
+      currHumidCard.text(
+        `${defaultData.current.relative_humidity_2m}% Humidity`
+      );
       createChart();
-      console.log(data.daily.time);
     });
   }
 
   fetchDataAndCreateChart();
 
-  // Function to update variables base on user input
-  function updateVariables() {
-    defaultZip = parseFloat(zipInput.val());
-    getLatLong(); // makes AJAX call and changes LAT/LONG
-  }
-
   // Add elements to page =======================
-  body.prepend(pageTitle);
-  currContainer.append(currDateCard);
+  // Body Start Includes Page Title
+  bodyStart.append(pageTitle);
+  // Body Middle Includes Chart & currContainer
+  currContainer.append(currTitleCard);
   currContainer.append(currTimeCard);
   currContainer.append(currTempCard);
   currContainer.append(currHumidCard);
-  currContainer.append(currMessageCard); 
-  body.append(currContainer);
-  inputContainer.append(zipInput);
-  inputContainer.append(setLocationBtn);
+  currContainer.append(currMessageCard);
+  bodyClose.append(currContainer);
+  // Body Close: Input Container, DropDown
+
   dropBtnContainer.append(setTimeZoneBtn);
   dropBtnContainer.append(dropDownContent);
-  body.append(inputContainer);
-  body.append(dropBtnContainer);
+  bodyClose.append(dropBtnContainer);
+
+  inputContainer.append(inputMessage);
+  inputContainer.append(zipInput);
+  inputContainer.append(setLocationBtn);
+  inputContainer.append(latLongInput);
+  bodyClose.append(inputContainer);
 
   // Event listener for setLocationBtn
   setLocationBtn.on("click", async function () {
     defaultZip = parseFloat(zipInput.val());
     await getLatLong(); // #1 Asyncronous
-    await getDefaultData().then((data) => {
-      defaultData = data;
-      console.log(data);
-      maxDailyTemps = defaultData.daily.temperature_2m_max;
-      minDailyTemps = defaultData.daily.temperature_2m_min;
-      timeLabels = defaultData.daily.time;
-      maxProbRain = defaultData.daily.precipitation_probability_max;
-      createChart();
-    });
+    currTitleCard.text(`Currently in ${localDisplayName}`);
+    fetchDataAndCreateChart();
   });
 
   $("#userZip").on("keydown", async function (e) {
     if (e.keyCode === 13) {
       defaultZip = parseFloat(zipInput.val());
       await getLatLong(); // #1 Asyncronous
+      currTitleCard.text(`Currently in ${localDisplayName}`);
       fetchDataAndCreateChart();
+    }
+  });
+
+  $("#latLongInput").on("keydown", async function (e) {
+    if (e.keyCode === 13) {
+      alert(
+        "Enter Latittude and Longitude separated by comma. \n Example: 47.1, -122.3"
+      );
+      let latLongArray = latLongInput.val().split(",");
+      latitude = parseFloat(latLongArray[0]);
+      longitude = parseFloat(latLongArray[1]);
+      console.log(latitude, longitude);
+      await getLocWithLatLong();
+      currTitleCard.text(`Currently in ${localDisplayName}`);
+      await fetchDataAndCreateChart();
     }
   });
 
@@ -221,5 +248,4 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log(locationData.timeZone);
     console.log("Time Zone Option clicked:", $(this).text());
   });
-
 });
