@@ -39,6 +39,8 @@ div {
 
 div#today-container {
   background-color: #998b799e;
+  background-size: cover;
+  color: white;
   border-radius: 25px;
   display: flex;
   flex-wrap: nowrap;
@@ -54,6 +56,8 @@ div#today-container {
 
 div#inputCont {
   background-color: #998b799e;
+  display: flex;
+  flex-direction: column;
 }
 
 button {
