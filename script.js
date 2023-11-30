@@ -48,13 +48,14 @@ document.addEventListener("DOMContentLoaded", function () {
   const today = {
     userName: "there",
   };
+  const todayCard = {};
   const future = {};
   const locationData = {
     latitude: 47.1,
     longitude: -122.32,
     localDisplayName: "Puyallup, WA (default)",
     defaultZip: 98375,
-    timeZone: "America%2FLos_Angeles",
+    timeZone: "America/Los_Angeles",
   };
   const timeZones = [
     "America/Anchorage",
@@ -108,13 +109,11 @@ document.addEventListener("DOMContentLoaded", function () {
     );
   }
 
-  //https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current=temperature_2m,relative_humidity_2m,is_day,precipitation,rain,showers,snowfall,wind_speed_10m&daily=sunrise,sunset&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=America%2FLos_Angeles
-
   // Asynchonous Call for Weather API
   function getDefaultData() {
     return new Promise((resolve, reject) => {
       $.get(
-        `https://api.open-meteo.com/v1/forecast?latitude=${locationData.latitude}&longitude=${locationData.longitude}&current=temperature_2m,relative_humidity_2m,is_day,precipitation,rain,showers,snowfall,cloud_cover,wind_speed_10m&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=${locationData.timeZone}`,
+        `https://api.open-meteo.com/v1/forecast?latitude=${locationData.latitude}&longitude=${locationData.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,cloud_cover,wind_speed_10m&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=${locationData.timeZone}`,
         (data) => {
           // provide data ref
           resolve(data);
@@ -174,31 +173,36 @@ document.addEventListener("DOMContentLoaded", function () {
       future.maxProbRain = defaultData.daily.precipitation_probability_max;
       // Get Current Conditions
       today.chanceOfRain = future.maxProbRain[0];
-      today.temp = defaultData.current.temperature_2m;
+      todayCard.temp = `🌡️ Temperature:  ${defaultData.current.temperature_2m}℉`;
+      todayCard.feelsLike = `🌡️ Feels Like: ${defaultData.current.apparent_temperature}℉`;
       today.isDay = defaultData.current.is_day === 1;
       today.isRaining = defaultData.current.rain > 0;
       today.isSnowing = defaultData.current.snowfall > 0;
-      today.isPartlyCloudy =
-        defaultData.current.cloud_cover > 19 &&
-        defaultData.current.cloud_cover < 51;
-      today.isCloudy =
-        defaultData.current.cloud_cover > 50 &&
-        defaultData.current.cloud_cover < 91;
-      today.isOvercast = defaultData.current.cloud_cover > 90;
-      today.isClear = defaultData.current.cloud_cover < 20;
-      today.humidity = defaultData.current.relative_humidity_2m;
-
-      console.log(defaultData); // Full Weather Object
-
-      separateDTG(defaultData.current.time); // separate time from date
+      todayCard.humidity = `💦 Humidity: ${defaultData.current.relative_humidity_2m}%`;
+      todayCard.location = `📍 Location: ${locationData.localDisplayName}`;
+      todayCard.windSpeed = `💨 Wind is ${defaultData.current.wind_speed_10m}mph`;
+      // Use time helper functions
+      today.timeOnly = getTimeOnly(defaultData.current.time);
+      todayCard.timeUpdated = `⌚️ Last Updated: ${getTimeOnly(defaultData.current.time)}`;
+      todayCard.todaysDate = `📅 ${getDateOnly(defaultData.current.time)}`;
+      today.dateOnly = getDateOnly(defaultData.current.time);
+      today.timeNum = transformTimeToNum(today.timeOnly);
+      todayCard.sunrise = `🌅 Sunrise: ${getTimeOnly(defaultData.daily.sunrise[0])}`;
+      todayCard.sunset = `🌆 Sunset: ${getTimeOnly(defaultData.daily.sunset[0])}`;
+      console.log(today.sunset);
+      // Call Helper for cloud coverage
+      getCloudCoverage(defaultData.current.cloud_cover);
 
       // Add dynamic text to Current Card
       currTitleCard.text(
         `On ${today.dateOnly} in ${locationData.localDisplayName}`
       );
       currTimeCard.text(`Last Updated: ${today.timeOnly}`);
-      currTempCard.text(`🌡️ ${today.temp}℉`);
-      currHumidCard.text(`${today.humidity}% Humidity`);
+      currTempCard.text(todayCard.temp);
+      currHumidCard.text(todayCard.humidity);
+
+      console.log(defaultData); // Full Weather Object
+
       setSkyConditons();
       setDynamicBackground();
       setDynamicMessage();
@@ -209,15 +213,27 @@ document.addEventListener("DOMContentLoaded", function () {
   fetchDataAndCreateChart();
 
   // Time helper function
-  function separateDTG(defaultDTGstring) {
+
+  function getTimeOnly(defaultDTGstring) {
     let dtgArray = defaultDTGstring.split("T");
-    today.dateOnly = dtgArray[0];
-    today.timeOnly = dtgArray[1];
-    let timeNumArray = today.timeOnly.split(":");
-    today.timeNum = parseInt(timeNumArray.join(""));
+    return dtgArray[1];
+  }
+  function getDateOnly(defaultDTGstring) {
+    let dtgArray = defaultDTGstring.split("T");
+    return dtgArray[0];
+  }
+  function transformTimeToNum(timeWithColon) {
+    let timeNumArray = timeWithColon.split(":");
+    return parseInt(timeNumArray.join(""));
   }
 
-  // Sky condtions logic ** and skies are ${skyConditions}
+  // Cloud coverage & sky condtions helper functions
+  function getCloudCoverage(cloudCoverage) {
+    today.isPartlyCloudy = cloudCoverage > 19 && cloudCoverage < 51;
+    today.isCloudy = cloudCoverage > 50 && cloudCoverage < 91;
+    today.isOvercast = cloudCoverage > 90;
+    today.isClear = cloudCoverage < 20;
+  }
   function setSkyConditons() {
     if (today.isClear) {
       today.skyConditions = "clear 😎";
@@ -247,7 +263,7 @@ document.addEventListener("DOMContentLoaded", function () {
       } else if (today.isSnowing) {
         // currContainer.css  Change to night snow
       } else {
-        // currContainer.css  Change to night clear
+        // currContainer.css("background-image", "url(Graphics/night-clear.png)";  =======
       }
     }
   }
@@ -268,6 +284,9 @@ document.addEventListener("DOMContentLoaded", function () {
       `Hey ${today.userName}! ${dynamicGreeting} Today's chance of Rain is ${today.chanceOfRain}% and skies are ${today.skyConditions}`
     );
   }
+
+  console.log(today);
+  console.log(todayCard);
 
   // Add elements to page =======================
   // Body Start Includes Page Title
@@ -293,17 +312,7 @@ document.addEventListener("DOMContentLoaded", function () {
   inputContainer.append(usrNameInput);
   bodyClose.append(inputContainer);
 
-  // EVENT Listeners ===================
-
-  // Event listener for setLocationBtn
-  // setLocationBtn.on("click", async function () {
-  //   defaultZip = parseFloat(zipInput.val());
-  //   await getLatLong(); // #1 Asyncronous
-  //   currTitleCard.text(`Currently in ${localDisplayName}`);
-  //   fetchDataAndCreateChart();
-  // });
-
-  // Input event listener
+  // ======== EVENT Listeners ===========
 
   $("input").on("input", async function () {
     if (
