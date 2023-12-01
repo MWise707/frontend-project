@@ -8,10 +8,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const pageTitle = $(`<div></div>`).attr("id", "pageTitle");
   // current conditions card ====================
   const currContainer = $(`<div></div>`).attr("id", "today-container");
-  const currTempCard = $(`<div></div>`).addClass("today-card");
-  const currHumidCard = $(`<div></div>`).addClass("today-card");
-  const currTitleCard = $(`<div></div>`).addClass("today-card");
-  const currTimeCard = $(`<div></div>`).addClass("today-card");
   const currMessageCard = $(`<div></div>`).addClass("today-card");
   // User Input Elements
   const inputContainer = $("<div></div>").attr("id", "inputCont");
@@ -35,6 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const setTimeZoneBtn = $(`<button >Change Time Zone ⬇️</button>`).addClass(
     "dropbtn"
   );
+  const featuresMenu = $("<div></div>").attr("id", "featuresMenu");
   const inputNameMessage = $("<div></div>")
     .attr("id", "inputNameMessage")
     .text("Add your name below")
@@ -49,6 +46,7 @@ document.addEventListener("DOMContentLoaded", function () {
     userName: "there",
   };
   const todayCard = {};
+  const featureIsChecked = {};
   const future = {};
   const locationData = {
     latitude: 47.1,
@@ -65,7 +63,6 @@ document.addEventListener("DOMContentLoaded", function () {
     "America/New_York",
     "America/Sao_Paulo",
   ];
-  currTitleCard.text(`Current Weather in ${locationData.localDisplayName}`);
 
   // Iterate over time zones and create drop down menu
   for (let i = 0; i < timeZones.length; i++) {
@@ -183,26 +180,51 @@ document.addEventListener("DOMContentLoaded", function () {
       todayCard.windSpeed = `💨 Wind is ${defaultData.current.wind_speed_10m}mph`;
       // Use time helper functions
       today.timeOnly = getTimeOnly(defaultData.current.time);
-      todayCard.timeUpdated = `⌚️ Last Updated: ${getTimeOnly(defaultData.current.time)}`;
+      todayCard.timeUpdated = `⌚️ Last Updated: ${getTimeOnly(
+        defaultData.current.time
+      )}`;
       todayCard.todaysDate = `📅 ${getDateOnly(defaultData.current.time)}`;
       today.dateOnly = getDateOnly(defaultData.current.time);
       today.timeNum = transformTimeToNum(today.timeOnly);
-      todayCard.sunrise = `🌅 Sunrise: ${getTimeOnly(defaultData.daily.sunrise[0])}`;
-      todayCard.sunset = `🌆 Sunset: ${getTimeOnly(defaultData.daily.sunset[0])}`;
-      console.log(today.sunset);
-      // Call Helper for cloud coverage
+      todayCard.sunrise = `🌅 Sunrise: ${getTimeOnly(
+        defaultData.daily.sunrise[0]
+      )}`;
+      todayCard.sunset = `🌆 Sunset: ${getTimeOnly(
+        defaultData.daily.sunset[0]
+      )}`;
+
+      for (const key in todayCard) {
+        featureIsChecked.key = false;
+        // Create div for each key
+        // add keyName as text for div
+        let checkboxContainer = $(`<div></div>`);
+        let checkboxInput = $("<input type='checkbox'/>").attr("id", `${key}`);
+        let checkboxLabel = $("<label></label>")
+          .attr("for", `${key}`)
+          .text(`${key}`);
+        // append div to featuresMenu
+        checkboxContainer.append(checkboxInput);
+        checkboxContainer.append(checkboxLabel);
+        featuresMenu.append(checkboxContainer);
+        // add event listener for each checkbox
+        checkboxInput.on("click", function (e) {
+          const chckboxId = checkboxInput.attr("id");
+          featureIsChecked[chckboxId] = !featureIsChecked[chckboxId];
+          console.log(featureIsChecked[chckboxId]);
+          console.log(`I am checkbox ${chckboxId}`);
+          const featureDivId = `${chckboxId}_featureDiv`;
+          if (featureIsChecked[chckboxId]) {
+            const newFeatureDiv = $(`<div></div>`)
+              .text(`${todayCard[key]}`)
+              .attr("id", featureDivId);
+            currContainer.append(newFeatureDiv);
+          } else {
+            $(`#${featureDivId}`).remove();
+          }
+        });
+      }
+
       getCloudCoverage(defaultData.current.cloud_cover);
-
-      // Add dynamic text to Current Card
-      currTitleCard.text(
-        `On ${today.dateOnly} in ${locationData.localDisplayName}`
-      );
-      currTimeCard.text(`Last Updated: ${today.timeOnly}`);
-      currTempCard.text(todayCard.temp);
-      currHumidCard.text(todayCard.humidity);
-
-      console.log(defaultData); // Full Weather Object
-
       setSkyConditons();
       setDynamicBackground();
       setDynamicMessage();
@@ -251,9 +273,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (today.isDay) {
       // Logic for daytime currContainer
       if (today.isRaining) {
-        // currContainer.css("background-image", "url(Graphics/day-clear.jpeg)");
+        currContainer.css("background-image", "url(Graphics/day-rain.gif)");
       } else if (today.isSnowing) {
-        // currContainer.css("background-image", "url(Add Day snowing)");
+        currContainer.css("background-image", "url(Graphics/day-snow.gif)");
       } else {
         currContainer.css("background-image", "url(Graphics/day-clear.jpeg)");
       }
@@ -261,9 +283,9 @@ document.addEventListener("DOMContentLoaded", function () {
       if (today.isRaining) {
         currContainer.css("background-image", "url(Graphics/night-rain.gif)");
       } else if (today.isSnowing) {
-        // currContainer.css  Change to night snow
+        currContainer.css("background-image", "url(Graphics/night-snow.gif)");
       } else {
-        // currContainer.css("background-image", "url(Graphics/night-clear.png)";  =======
+        currContainer.css("background-image", "url(Graphics/night-snow.gif)");
       }
     }
   }
@@ -285,23 +307,17 @@ document.addEventListener("DOMContentLoaded", function () {
     );
   }
 
-  console.log(today);
-  console.log(todayCard);
-
   // Add elements to page =======================
   // Body Start Includes Page Title
   bodyStart.append(pageTitle);
   // Body Middle Includes Chart & currContainer
   currContainer.append(currMessageCard);
-  currContainer.append(currTitleCard);
-  currContainer.append(currTimeCard);
-  currContainer.append(currTempCard);
-  currContainer.append(currHumidCard);
   bodyClose.append(currContainer);
   // Body Close: Input Container, DropDown
 
   dropBtnContainer.append(setTimeZoneBtn);
   dropBtnContainer.append(dropDownContent);
+  dropBtnContainer.append(featuresMenu);
   bodyClose.append(dropBtnContainer);
 
   inputContainer.append(inputMessage);
@@ -313,7 +329,6 @@ document.addEventListener("DOMContentLoaded", function () {
   bodyClose.append(inputContainer);
 
   // ======== EVENT Listeners ===========
-
   $("input").on("input", async function () {
     if (
       latLongInput.val() !== "" &&
