@@ -193,6 +193,9 @@ document.addEventListener("DOMContentLoaded", function () {
         defaultData.daily.sunset[0]
       )}`;
 
+      // Clear the features menu before creating checkboxes
+      featuresMenu.empty();
+
       for (const key in todayCard) {
         featureIsChecked.key = false;
         // Create div for each key
@@ -270,23 +273,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Logic for dynamic background
   function setDynamicBackground() {
-    if (today.isDay) {
-      // Logic for daytime currContainer
-      if (today.isRaining) {
-        currContainer.css("background-image", "url(Graphics/day-rain.gif)");
-      } else if (today.isSnowing) {
-        currContainer.css("background-image", "url(Graphics/day-snow.gif)");
-      } else {
-        currContainer.css("background-image", "url(Graphics/day-clear.jpeg)");
-      }
+    if (today.isDay && today.isRaining) {
+      currContainer.css("background-image", "url(Graphics/day-rain.gif)");
+    } else if (today.isDay && today.isSnowing) {
+      currContainer.css("background-image", "url(Graphics/day-snow.gif)");
+    } else if (today.isDay && today.isClear) {
+      currContainer.css("background-image", "url(Graphics/day-clear.jpeg)");
+    } else if (!today.isDay && today.isRaining) {
+      currContainer.css("background-image", "url(Graphics/night-rain.gif)");
+    } else if (!today.isDay && today.isSnowing) {
+      currContainer.css("background-image", "url(Graphics/night-snow.gif)");
     } else {
-      if (today.isRaining) {
-        currContainer.css("background-image", "url(Graphics/night-rain.gif)");
-      } else if (today.isSnowing) {
-        currContainer.css("background-image", "url(Graphics/night-snow.gif)");
-      } else {
-        currContainer.css("background-image", "url(Graphics/night-snow.gif)");
-      }
+      currContainer.css("background-image", "url(Graphics/night-clear.png)");
     }
   }
 
@@ -349,7 +347,7 @@ document.addEventListener("DOMContentLoaded", function () {
       usrNameInput.val() !== "" &&
       usrNameInput.val() !== usrNameInput.prop("placeholder")
     ) {
-      userName = usrNameInput.val();
+      today.userName = usrNameInput.val();
     }
     fetchDataAndCreateChart();
   });
