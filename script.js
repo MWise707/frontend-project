@@ -303,13 +303,14 @@ document.addEventListener("DOMContentLoaded", function () {
     currMessageCard.text(
       `Hey ${today.userName}! ${dynamicGreeting} Today's chance of Rain is ${today.chanceOfRain}% and skies are ${today.skyConditions}`
     );
+    currContainer.append(currMessageCard);
   }
 
   // Add elements to page =======================
   // Body Start Includes Page Title
   bodyStart.append(pageTitle);
   // Body Middle Includes Chart & currContainer
-  currContainer.append(currMessageCard);
+  
   bodyClose.append(currContainer);
   // Body Close: Input Container, DropDown
 
@@ -349,6 +350,7 @@ document.addEventListener("DOMContentLoaded", function () {
     ) {
       today.userName = usrNameInput.val();
     }
+    currContainer.empty();
     fetchDataAndCreateChart();
   });
 
