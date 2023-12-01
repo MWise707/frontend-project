@@ -62,6 +62,18 @@ document.addEventListener("DOMContentLoaded", function () {
     "America/Chicago",
     "America/New_York",
     "America/Sao_Paulo",
+    "Not set (GMT+0)",
+    "GMT+0",
+    "Automatically detect time zone",
+    "Europe/London",
+    "Europe/Berlin",
+    "Europe/Moscow",
+    "Africa/Cairo",
+    "Asia/Bangkok",
+    "Asia/Singapore",
+    "Asia/Tokyo",
+    "Australia/Sydney",
+    "Pacific/Aukland",
   ];
 
   // Iterate over time zones and create drop down menu
@@ -100,7 +112,6 @@ document.addEventListener("DOMContentLoaded", function () {
     $.get(
       `https://geocode.maps.co/reverse?lat=${locationData.latitude}&lon=${locationData.longitude}`,
       (locData) => {
-        localDisplayName = locData.display_name;
         locationData.localDisplayName = locData.display_name;
       }
     );
